@@ -73,6 +73,7 @@ public class Password {
         return password;
     }
 
+    //checks if character has been used already
     public boolean isUnique() {
         for(String c: usedCharacters) {
             if (singleChar.equalsIgnoreCase(c)) {
