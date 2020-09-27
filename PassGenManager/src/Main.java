@@ -31,7 +31,7 @@ public class Main {
             if (choice == 1) {
                 System.out.println("What is the password for? ");
                 String app = kmart.next();
-                System.out.println("What is the password ");
+                System.out.println("What is the password? ");
                 String password = kmart.next();
                 add(app.toLowerCase(), password, passwordDatabase);
             }
@@ -99,7 +99,7 @@ public class Main {
 
     public static void usingBufferedWriter(String app, String password) throws IOException {
         BufferedWriter writer = new BufferedWriter(
-                new FileWriter("C:/Users/kayla/Desktop/PassGen/passwords.txt", true)
+                new FileWriter("passwords.txt", true)
         );
         writer.newLine();
         writer.write(app + ", " + password);
@@ -111,7 +111,7 @@ public class Main {
         BufferedReader reader;
         try {
             reader = new BufferedReader(new FileReader(
-                    "C:/Users/kayla/Desktop/PassGen/passwords.txt"));
+                    "passwords.txt"));
             String line = reader.readLine();
             while (line != null) {
                 //   System.out.println(line);
@@ -131,14 +131,14 @@ public class Main {
 
     public static void deleteFile() {
         try {
-            File f = new File("C:/Users/kayla/Desktop/PassGen/passwords.txt");
+            File f = new File("passwords.txt");
             f.delete();
         }
         catch(Exception e) { e.printStackTrace(); }
     }
 
     public static void createFile() throws IOException {
-        File file = new File("C:/Users/kayla/Desktop/PassGen/passwords.txt");
+        File file = new File("passwords.txt");
         file.createNewFile();
     }
 
