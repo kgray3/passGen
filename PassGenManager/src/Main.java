@@ -31,7 +31,7 @@ public class Main {
             if (choice == 1) {
                 System.out.println("What is the password for? ");
                 String app = kmart.next();
-                System.out.println("What is the password :3");
+                System.out.println("What is the password ");
                 String password = kmart.next();
                 add(app.toLowerCase(), password, passwordDatabase);
             }
