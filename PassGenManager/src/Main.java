@@ -23,12 +23,13 @@ public class Main {
 
         while (running == 1) {
             Scanner kmart = new Scanner(System.in);
-            int choice;
+            String choice;
             System.out.println("Would you like to [1] add a password, [2] find a password, " +
                     "\n[3] randomly generate a password, [4] delete password, or [5] exit? [1, 2, 3, 4, or 5]");
-            choice = kmart.nextInt();
+           // kmart.next();
+            choice = kmart.nextLine();
 
-            if (choice == 1) {
+            if (choice.equals("1")) {
                 System.out.println("What is the password for? ");
                 String app = kmart.next();
                 System.out.println("What is the password? ");
@@ -36,7 +37,7 @@ public class Main {
                 add(app.toLowerCase(), password, passwordDatabase);
             }
 
-            else if (choice == 2) {
+            else if (choice.equals("2")) {
                 int temp = 0;
                 while(temp == 0) {
                 System.out.println("What is the password for? ");
@@ -50,7 +51,7 @@ public class Main {
                 else {
                     app = app.substring(app.indexOf('*') + 1);
                     System.out.println("The choices are: ");
-                    for (Map.Entry<String, String> entry2 : passwordDatabase.entrySet()) {        //gathers all hashmap values into a set
+                    for (Map.Entry<String, String> entry2 : passwordDatabase.entrySet()) {  //gathers all hashmap values into a set
                         if(entry2.getKey().indexOf(app) >= 0) {
                             System.out.println(entry2.getKey());
                         }
@@ -59,7 +60,7 @@ public class Main {
                 }
                 }
 
-            } else if (choice == 3) {  //CREATING THE RANDOMLY GENERATED PASSWORD
+            } else if (choice.equals("3")) {  //CREATING THE RANDOMLY GENERATED PASSWORD
                 int length1, numNum1, numChar1;
                 String response;
 
@@ -76,18 +77,17 @@ public class Main {
 
 
             }
-            else if(choice == 4) {
+            else if(choice.equals("4")) {
                 System.out.println("What application's password would you like to delete? ");
                 String app = kmart.next();
                 deletePassword(passwordDatabase,app);
             }
-            else { //PROGRAM STOPS RUNNING
-                //createFile();
-                //for (Map.Entry<String, String> entry : passwordDatabase.entrySet()) {        //gathers all hashmap values into a set
-                  //  usingBufferedWriter(entry.getKey(), entry.getValue());
-                //}
-
+            else if(choice.equals("5")){ //PROGRAM STOPS RUNNING
+                System.out.println("Bye!");
                 running = 0;
+            }
+            else{
+                System.out.println("[Error] Please enter the correct command."); //ADDED ERROR MESSAGE FOR INCORRECT INPUT
             }
 
         }
