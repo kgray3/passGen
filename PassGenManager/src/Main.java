@@ -1,16 +1,27 @@
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 public class Main {
     public static void main(String[] args) throws IOException {
         HashMap<String, String> passwordDatabase = new HashMap<>();  //hashmap for local memory storage of passwords for encryption
-        read(passwordDatabase);
+        final Path path = Files.createTempFile("ENCRYPTEDpasswords", ".txt");
+
+        if(Files.exists(path))
+        {
+            readDecrypt(passwordDatabase);
+        }
+        else{
+            read(passwordDatabase);
+        }
+
         deleteFile();
         int running = 1;
 
 
-       Runnable doShutDown = () -> {       //in case of crash creates file of passwords still
+        Runnable doShutDown = () -> {       //in case of crash creates file of passwords still
             try {
                 createFile();
                 for (Map.Entry<String, String> entry : passwordDatabase.entrySet()) {        //gathers all hashmap values into a set
@@ -26,7 +37,7 @@ public class Main {
             String choice;
             System.out.println("Would you like to [1] add a password, [2] find a password, " +
                     "\n[3] randomly generate a password, [4] delete password, or [5] exit? [1, 2, 3, 4, or 5]");
-           // kmart.next();
+            // kmart.next();
             choice = kmart.nextLine();
 
             if (choice.equals("1")) {
@@ -40,40 +51,52 @@ public class Main {
             else if (choice.equals("2")) {
                 int temp = 0;
                 while(temp == 0) {
-                System.out.println("What is the password for? ");
-                String app = kmart.next();
+                    System.out.println("What is the password for? ");
+                    String app = kmart.next();
 
 
-                if(app.indexOf('*') == -1) {
-                    System.out.println("The password for " + app + " is:\n" + passwordDatabase.get(app.toLowerCase()) + "\n");
-                    temp = 1;
-                }
-                else {
-                    app = app.substring(app.indexOf('*') + 1);
-                    System.out.println("The choices are: ");
-                    for (Map.Entry<String, String> entry2 : passwordDatabase.entrySet()) {  //gathers all hashmap values into a set
-                        if(entry2.getKey().indexOf(app) >= 0) {
-                            System.out.println(entry2.getKey());
-                        }
+                    if(app.indexOf('*') == -1) {
+                        System.out.println("The password for " + app + " is:\n" + passwordDatabase.get(app.toLowerCase()) + "\n");
+                        temp = 1;
                     }
+                    else {
+                        app = app.substring(app.indexOf('*') + 1);
+                        System.out.println("The choices are: ");
+                        for (Map.Entry<String, String> entry2 : passwordDatabase.entrySet()) {  //gathers all hashmap values into a set
+                            if(entry2.getKey().indexOf(app) >= 0) {
+                                System.out.println(entry2.getKey());
+                            }
+                        }
 
-                }
+                    }
                 }
 
             } else if (choice.equals("3")) {  //CREATING THE RANDOMLY GENERATED PASSWORD
                 int length1, numNum1, numChar1;
                 String response;
+                int running2 = 1;
+                while(running2 == 1) {
+                    try {
+                        System.out.println("Length: ");
+                        length1 = kmart.nextInt();
+                        System.out.println("Maximum number of numbers: ");
+                        numNum1 = kmart.nextInt();
+                        System.out.println("Maximum number of special characters: ");
+                        numChar1 = kmart.nextInt();
 
-                System.out.println("Length: ");
-                length1 = kmart.nextInt();
-                System.out.println("Maximum number of numbers: ");
-                numNum1 = kmart.nextInt();
-                System.out.println("Maximum number of characters: ");
-                numChar1 = kmart.nextInt();
+                        if ((numNum1 + numChar1) > length1) {
+                            System.out.println("[Error] Exceeded maximum length.");
+                        } else {
+                            Password password1 = new Password(length1, numNum1, numChar1);
+                            System.out.println(password1.createPassword());
+                            running2 = 0;
+                        }
+                    } catch(Exception e ) {
+                        System.out.println("[Error] Please enter a number.");
+                        kmart.next();
+                    }
+                }
 
-
-                Password password1 = new Password(length1, numNum1, numChar1);
-                System.out.println(password1.createPassword());
 
 
             }
@@ -98,11 +121,12 @@ public class Main {
     }
 
     public static void usingBufferedWriter(String app, String password) throws IOException {
+        AES encryptor = new AES();
         BufferedWriter writer = new BufferedWriter(
-                new FileWriter("passwords.txt", true)
+                new FileWriter("ENCRYPTEDpasswords.txt", true)
         );
         writer.newLine();
-        writer.write(app + ", " + password);
+        writer.write(encryptor.paddedEncryption(app + ", " + password,"abcdefghijklmnop"));
         writer.close();
 
     }
@@ -129,16 +153,42 @@ public class Main {
         }
     }
 
+    public static void readDecrypt(HashMap<String, String> x) {       //reads text file and copies it into local memory
+        AES decryptor = new AES();
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader(
+                    "ENCRYPTEDpasswords.txt"));
+            String line = reader.readLine();
+            while (line != null) {
+               // System.out.println(line.length());
+                if(line.length() > 0) {
+                    line = decryptor.paddedDecryption(line, "abcdefghijklmnop");
+                }
+                int commaPlace = line.indexOf(',');
+                if (commaPlace != -1) {
+                    x.put(line.substring(0, commaPlace), line.substring(commaPlace + 2));
+                }
+                line = reader.readLine();   // read next line
+
+            }
+            reader.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void deleteFile() {
         try {
-            File f = new File("passwords.txt");
+            File f = new File("ENCRYPTEDpasswords.txt");
             f.delete();
         }
         catch(Exception e) { e.printStackTrace(); }
     }
 
     public static void createFile() throws IOException {
-        File file = new File("passwords.txt");
+        File file = new File("ENCRYPTEDpasswords.txt");
         file.createNewFile();
     }
 
@@ -147,4 +197,3 @@ public class Main {
 
     }
 }
-
