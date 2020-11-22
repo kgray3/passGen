@@ -116,6 +116,14 @@ public class Main {
 
         }
     }
+    
+    public static void setMasterKey(String newMaster) {
+    	// guard for nulls and empty strings
+    	if (newMaster == null || newMaster.length() < 1) return;
+    	// duplicate short keys and cut long keys.
+    	// there are likely better ways to handle this.
+    	masterKey = (newMaster.repeat(16)).substring(0, 16);
+    }
 
     public static void add(String app, String password, HashMap<String, String> passwordDatabase) {
         passwordDatabase.put(app, password);
