@@ -6,8 +6,9 @@ import java.util.Map;
 import java.util.Scanner;
 public class Main {
 	public static String masterKey = "abcdefghijklmnop";
-    public static void main(String[] args) throws IOException {
-        HashMap<String, String> passwordDatabase = new HashMap<>();  //hashmap for local memory storage of passwords for encryption
+	static HashMap<String, String> passwordDatabase = new HashMap<>();  //hashmap for local memory storage of passwords for encryption
+	
+    public static void main(String[] args) throws IOException {        
         final Path path = Files.createTempFile("ENCRYPTEDpasswords", ".txt");
 
         if(Files.exists(path))
@@ -124,6 +125,31 @@ public class Main {
     	// there are likely better ways to handle this.
     	masterKey = (newMaster.repeat(16)).substring(0, 16);
     }
+    static void init() throws IOException {
+	    final Path path = Files.createTempFile("ENCRYPTEDpasswords", ".txt");
+	
+	    if(Files.exists(path))
+	    {
+	        readDecrypt(passwordDatabase);
+	    }
+	    else{
+	        read(passwordDatabase);
+	    }
+	
+	    deleteFile();
+	
+	
+	    Runnable doShutDown = () -> {       //in case of crash creates file of passwords still
+	        try {
+	            createFile();
+	            for (Map.Entry<String, String> entry : passwordDatabase.entrySet()) {        //gathers all hashmap values into a set
+	                usingBufferedWriter(entry.getKey(), entry.getValue());
+	            }
+	        } catch (Exception e){}
+	    };
+	
+	    Runtime.getRuntime().addShutdownHook(new Thread(doShutDown, "ShutdownHook"));
+	}
 
     public static void add(String app, String password, HashMap<String, String> passwordDatabase) {
         passwordDatabase.put(app, password);
