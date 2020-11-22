@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 public class Main {
+	public static String masterKey = "abcdefghijklmnop";
     public static void main(String[] args) throws IOException {
         HashMap<String, String> passwordDatabase = new HashMap<>();  //hashmap for local memory storage of passwords for encryption
         final Path path = Files.createTempFile("ENCRYPTEDpasswords", ".txt");
@@ -126,7 +127,7 @@ public class Main {
                 new FileWriter("ENCRYPTEDpasswords.txt", true)
         );
         writer.newLine();
-        writer.write(encryptor.paddedEncryption(app + ", " + password,"abcdefghijklmnop"));
+        writer.write(encryptor.paddedEncryption(app + ", " + password,masterKey));
         writer.close();
 
     }
@@ -163,7 +164,7 @@ public class Main {
             while (line != null) {
                // System.out.println(line.length());
                 if(line.length() > 0) {
-                    line = decryptor.paddedDecryption(line, "abcdefghijklmnop");
+                    line = decryptor.paddedDecryption(line, masterKey);
                 }
                 int commaPlace = line.indexOf(',');
                 if (commaPlace != -1) {
