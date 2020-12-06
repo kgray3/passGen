@@ -1,6 +1,7 @@
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,14 +11,15 @@ public class Main {
     private static boolean correctKey = false; //used to decide if files should be overwritten upon shutdown
     public static void main(String[] args) throws IOException {
         HashMap<String, String> passwordDatabase = new HashMap<>();  //hashmap for local memory storage of passwords for encryption
-        final Path path = Files.createTempFile("KEYFILE", ".txt");
+      //  final Path path = Files.createTempFile("keyfile", ".txt");
+        boolean fileExists = Files.isReadable(Paths.get("keyfile.txt")) && Files.isWritable(Paths.get("keyfile.txt"));
         Scanner kmart= new Scanner(System.in);
-        System.out.println("Is this your first time using? [y] or [n] "); //I want to get rid of this
-        String response2 = kmart.nextLine();                            //file.exists was giving problems for some reason
+      //  System.out.println("Is this your first time using? [y] or [n] "); //I want to get rid of this
+       // String response2 = kmart.nextLine();                            //file.exists was giving problems for some reason
 
     //things to do: fix file.exists problem -- maybe look into hidden files
 
-        if (response2.equalsIgnoreCase("y")){ //file doesn't exist -- FIRST TIME USE
+        if (!fileExists){ //file doesn't exist -- FIRST TIME USE
             //Scanner tempScan = new Scanner(System.in);
             System.out.println("Welcome, first-time user. Please enter your master key (length 16): ");
             String temp = kmart.nextLine();
@@ -45,7 +47,27 @@ public class Main {
         {
             System.out.println("Welcome back! Please enter your master key: ");
             String input = kmart.next();
-            if(match(input)) { //if key matches
+            int trial = 1;
+            while(trial < 3) { //checks trials 1 + 2 and asks for trials 2 + 3
+                if(!match(input)) {
+                    trial++;
+                    System.out.println("Incorrect key. Please try again (attempt " + trial + " of 3): ");
+                    input = kmart.next();
+                }
+                else { //if key matches
+                    correctKey = true; //shutdown hook is 'enabled'
+                    MasterKey = input;
+                    System.out.println("\n[KEY ACCEPTED]"); //notifies user
+
+                    //decrypts password file using master key and deletes files so there isn't issues with overwriting later
+                    readDecrypt(passwordDatabase);
+                    deleteFile("ENCRYPTEDpasswords.txt");
+                    deleteFile("keyfile.txt");
+                    trial = 5;
+                }
+            }
+            //checks final trial because the while loop is uneven
+            if(match(input)) {
                 correctKey = true; //shutdown hook is 'enabled'
                 MasterKey = input;
                 System.out.println("\n[KEY ACCEPTED]"); //notifies user
@@ -54,11 +76,13 @@ public class Main {
                 readDecrypt(passwordDatabase);
                 deleteFile("ENCRYPTEDpasswords.txt");
                 deleteFile("keyfile.txt");
+                trial = 5;
             }
-            else {
+
+            else{
                 /* correct key is false by default -- doesn't delete previous password files in case of mistake
                 also circumvents attempts to brute force by exiting */
-                System.out.println("Incorrect key. Exiting program.");
+                System.out.println("Attempts failed. Exiting program.");
                 System.exit(0);
             }
         }
