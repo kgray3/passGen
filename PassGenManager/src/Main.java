@@ -67,19 +67,21 @@ public class Main {
                 }
             }
             //checks final trial because the while loop is uneven
-            if(match(input)) {
-                correctKey = true; //shutdown hook is 'enabled'
-                MasterKey = input;
-                System.out.println("\n[KEY ACCEPTED]"); //notifies user
+            if(trial == 3) {
+                if(match(input)) {
+                    correctKey = true; //shutdown hook is 'enabled'
+                    MasterKey = input;
+                    System.out.println("\n[KEY ACCEPTED]"); //notifies user
 
-                //decrypts password file using master key and deletes files so there isn't issues with overwriting later
-                readDecrypt(passwordDatabase);
-                deleteFile("ENCRYPTEDpasswords.txt");
-                deleteFile("keyfile.txt");
-                trial = 5;
+                    //decrypts password file using master key and deletes files so there isn't issues with overwriting later
+                    readDecrypt(passwordDatabase);
+                    deleteFile("ENCRYPTEDpasswords.txt");
+                    deleteFile("keyfile.txt");
+                    trial = 5;
+                }
             }
 
-            else{
+            if(!correctKey){
                 /* correct key is false by default -- doesn't delete previous password files in case of mistake
                 also circumvents attempts to brute force by exiting */
                 System.out.println("Attempts failed. Exiting program.");
