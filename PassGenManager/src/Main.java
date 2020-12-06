@@ -1,6 +1,5 @@
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -9,15 +8,10 @@ import java.util.Scanner;
 public class Main {
     private static String MasterKey; //stores user-inputted master key
     private static boolean correctKey = false; //used to decide if files should be overwritten upon shutdown
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         HashMap<String, String> passwordDatabase = new HashMap<>();  //hashmap for local memory storage of passwords for encryption
-      //  final Path path = Files.createTempFile("keyfile", ".txt");
         boolean fileExists = Files.isReadable(Paths.get("keyfile.txt")) && Files.isWritable(Paths.get("keyfile.txt"));
         Scanner kmart= new Scanner(System.in);
-      //  System.out.println("Is this your first time using? [y] or [n] "); //I want to get rid of this
-       // String response2 = kmart.nextLine();                            //file.exists was giving problems for some reason
-
-    //things to do: fix file.exists problem -- maybe look into hidden files
 
         if (!fileExists){ //file doesn't exist -- FIRST TIME USE
             //Scanner tempScan = new Scanner(System.in);
@@ -36,7 +30,7 @@ public class Main {
                     MasterKey = kmart.nextLine();
                 }
                 else { //correct key size --> let user know key so they can memorize it
-                   System.out.println("[KEY ACCEPTED] Your master key is " + MasterKey +". Don't lose it.");
+                   System.out.println("[KEY ACCEPTED] Your master key is " + MasterKey +" -Don't lose it.");
                    correctKey = true;
                    needKey = false;
                }
@@ -85,6 +79,7 @@ public class Main {
                 /* correct key is false by default -- doesn't delete previous password files in case of mistake
                 also circumvents attempts to brute force by exiting */
                 System.out.println("Attempts failed. Exiting program.");
+                Thread.sleep(2000);
                 System.exit(0);
             }
         }
@@ -169,7 +164,6 @@ public class Main {
 
             } else if (choice.equals("3")) {  //CREATING THE RANDOMLY GENERATED PASSWORD
                 int length1, numNum1, numChar1;
-                String response;
                 int running2 = 1;
                 while(running2 == 1) {
                     try {
@@ -190,7 +184,7 @@ public class Main {
                         }
                     } catch(Exception e ) {
                         System.out.println("[Error] Please enter a number.");
-                       // kmart.next();
+                        kmart.next();
                     }
                 }
 
@@ -212,13 +206,13 @@ public class Main {
 
                 boolean needKey = true;
                 while(needKey) {
-                    if (newKey.length() !=16) { //makes sure user enters a password of length 16
+                    if (MasterKey.length() !=16) { //makes sure user enters a password of length 16
                         System.out.println("Incorrect length. Please try again: ");
                         String temp = kmart.next();
                         MasterKey = temp;
                     }
                     else {
-                        System.out.println("[KEY ACCEPTED] Your master key is " + MasterKey +". Don't lose it.");
+                        System.out.println("[KEY ACCEPTED]");
                         needKey = false;
                     }
                 }
@@ -227,6 +221,7 @@ public class Main {
             //EXIT PROGRAM
             else if(choice.equals("6")){
                 System.out.println("Bye!");
+                Thread.sleep(2000);
                 running = 0;
             }
 
