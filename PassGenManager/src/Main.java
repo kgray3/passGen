@@ -126,10 +126,40 @@ public class Main {
 
             //ADD PASSWORD
             if (choice.equals("1")) {
+                boolean correctApp = false;
                 System.out.println("What is the password for? ");
                 String app = kmart.next();
+                /*Error-Handling for commas and colons:
+                - can't have commas due to using commas to separate apps in passwords in txt file
+                - can't have colons because colons are used as padding in AES encryption
+                 */
+                while(!correctApp) {
+                    if (app.indexOf(",") > -1 || app.indexOf(":") > -1) {
+                        System.out.println("\n[Error] Sorry, commas and colons are not allowed. Please try again: ");
+                        app = kmart.next();
+                    }
+                    else {
+                        correctApp = true;
+                        System.out.println("\n[App Name Accepted]");
+                    }
+                }
+
+                boolean passwordCorrect = false;
                 System.out.println("What is the password? ");
                 String password = kmart.next();
+                /*Error-Handling for colons in passwords:
+                - can't have colons because colons are used as padding in AES encryption
+                 */
+                while(!passwordCorrect) {
+                    if(password.indexOf(":") > -1) {
+                        System.out.println("\n[Error] Sorry, colons are not allowed. Please try again: ");
+                        password = kmart.next();
+                    }
+                    else {
+                        passwordCorrect = true;
+                        System.out.println("\n[Password Accepted]");
+                    }
+                }
                 add(app.toLowerCase(), password, passwordDatabase);
             }
 
