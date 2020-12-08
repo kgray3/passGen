@@ -72,13 +72,25 @@ public class GUIFrame extends JFrame {
 		findButton = new JButton("Find");
 		findButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (passwordDatabase.containsKey(siteBox.getText().toLowerCase())) {
-					keyBox.setText(passwordDatabase.get(siteBox.getText().toLowerCase()));
+				String site = siteBox.getText().toLowerCase();
+				if (passwordDatabase.containsKey(site)) {
+					keyBox.setText(passwordDatabase.get(site));
 					inform("Password found.");
 				}
+				else if (!site.startsWith("*")){
+					inform("Password not found. Try searching with a * as site.");
+				}
 				else {
-					//TODO: add disambiguation functionality
-					inform("Password not found.");
+					String part = site.substring(1);
+					String matches = "";
+					for (String key : me.passwordDatabase.keySet()) {
+						if(key.contains(part)) {
+							matches += key + ":";
+						}
+					}
+					me.keyBox.setText(matches);
+					if (matches.length() > 0) inform("Sites found:");
+					else inform("No sites found.");
 				}
 			}
 		});
