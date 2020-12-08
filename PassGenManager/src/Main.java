@@ -100,12 +100,11 @@ public class Main {
 
                     //Stores key in 'KEYFILE.txt'
                     createFile("keyfile.txt");
-                    SHA enc = new SHA();
                     BufferedWriter writer = new BufferedWriter(
                             new FileWriter("keyfile.txt", true)
                     );
                     writer.newLine();
-                    writer.write(enc.get_SHA_512_SecurePassword(MasterKey)); //uses SHA-512 hash function to securely encrypt MasterKey
+                    writer.write(SHA.get_SHA_512_SecurePassword(MasterKey)); //uses SHA-512 hash function to securely encrypt MasterKey
                     writer.close();
                 } catch (Exception e) {
                 }
@@ -271,24 +270,31 @@ public class Main {
 
     //ENCRYPTS PASSWORDS USING MASTERKEY AND WRITES THEM TO 'ENCRYPTEDpasswords.txt' FILE UPON EXIT
     public static void usingBufferedWriter(String app, String password, String fileName) throws IOException {
-        AES encryptor = new AES();
         BufferedWriter writer = new BufferedWriter(
                 new FileWriter(fileName, true)
         );
         writer.newLine();
-        writer.write(encryptor.paddedEncryption(app + ", " + password,MasterKey)); //AES encryption of each password
+        writer.write(AES.paddedEncryption(app + ", " + password,MasterKey)); //AES encryption of each password
+        writer.close();
+    }
+    //ENCRYPTS PASSWORDS USING MASTERKEY AND WRITES THEM TO 'ENCRYPTEDpasswords.txt' FILE UPON EXIT
+    public static void usingBufferedWriter(String app, String password, String fileName, String key) throws IOException {
+        BufferedWriter writer = new BufferedWriter(
+                new FileWriter(fileName, true)
+        );
+        writer.newLine();
+        writer.write(AES.paddedEncryption(app + ", " + password, key)); //AES encryption of each password
         writer.close();
     }
 
     //FUNCTION TO CHECK MASTERKEY WITH USERINPUT UPON OPENING PROGRAM
     public static boolean match(String userInput) {
         try {
-            SHA encrypt = new SHA();
            BufferedReader x = new BufferedReader(new FileReader("keyfile.txt")); //checks key in 'KEYFILE.txt'
             String line = x.readLine();
             while(line!= null) {
                 //encrypts userInput using SHA-512 to see if it matches the encrypted key stored on file
-                if(line.equalsIgnoreCase(encrypt.get_SHA_512_SecurePassword(userInput)))
+                if(line.equalsIgnoreCase(SHA.get_SHA_512_SecurePassword(userInput)))
                 {
                     x.close();
                     return true;
@@ -304,7 +310,6 @@ public class Main {
 
     //reads text file and copies it into local memory
     public static void readDecrypt(HashMap<String, String> x) {
-        AES decryptor = new AES();
         BufferedReader reader;
         try {
             reader = new BufferedReader(new FileReader(
@@ -313,7 +318,30 @@ public class Main {
             while (line != null) {
                // System.out.println(line.length());
                 if(line.length() > 0) {
-                    line = decryptor.paddedDecryption(line, MasterKey);
+                    line = AES.paddedDecryption(line, MasterKey);
+                }
+                int commaPlace = line.indexOf(',');
+                if (commaPlace != -1) {
+                    x.put(line.substring(0, commaPlace), line.substring(commaPlace + 2));
+                }
+                line = reader.readLine();   // read next line
+            }
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    //reads text file and copies it into local memory
+    public static void readDecrypt(HashMap<String, String> x, String key) {
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader(
+                    "ENCRYPTEDpasswords.txt"));
+            String line = reader.readLine();
+            while (line != null) {
+               // System.out.println(line.length());
+                if(line.length() > 0) {
+                    line = AES.paddedDecryption(line, key);
                 }
                 int commaPlace = line.indexOf(',');
                 if (commaPlace != -1) {

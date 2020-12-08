@@ -3,7 +3,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -16,16 +15,17 @@ public class GUIFrame extends JFrame {
 		new GUIFrame();
 	}
 	//copied from Main.java
-	private String masterKey; //stores user-inputted master key
+	private String masterKey; //stores user-inputed master key
     private HashMap<String, String> passwordDatabase = new HashMap<>();  //hashmap for local memory storage of passwords for encryption
 
     private boolean settingMaster;
     private int triesRemaining = 3;
     private boolean hookAdded = false;
+    private GUIFrame me = this;
     
 	private static final long serialVersionUID = 1L;
 	
-	private JLabel infoDisplay;
+	private JLabel[] infoDisplay = new JLabel[4];
 	private JPasswordField masterKeyBox;
 	private JTextField keyBox;
 	private JTextField siteBox;
@@ -46,36 +46,43 @@ public class GUIFrame extends JFrame {
 		JPanel panel = new JPanel();
 		panel.setLayout(new GridBagLayout());
 		//info
-		addBagElement(panel, infoDisplay, 0, 0, 3);
+		addBagElement(panel, infoDisplay[0], 0, 0, 3);
 		//site
+		JLabel siteLabel = new JLabel("Site:");
+		addBagElement(panel, siteLabel, 0, 1, 1);
 		siteBox = new JTextField(32);
 		siteBox.setToolTipText("Enter site name here.");
 		addBagElement(panel, siteBox, 1, 1, 2);
-		JLabel siteLabel = new JLabel("For:");
-		addBagElement(panel, siteLabel, 0, 1, 1);
 		//key
-		keyBox = new JTextField(32);
-		keyBox.setToolTipText("Site password here.");
-		addBagElement(panel, siteBox, 1, 2, 2);
 		JLabel keyLabel = new JLabel("Password:");
 		addBagElement(panel, keyLabel, 0, 2, 1);
+		keyBox = new JTextField(32);
+		keyBox.setToolTipText("Site password here.");
+		addBagElement(panel, keyBox, 1, 2, 2);
 		//add
 		addButton = new JButton("Add");
 		addButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				passwordDatabase.put(siteBox.getText().toLowerCase(), keyBox.getText());
+				inform("Password added.");
 			}
 		});
-		addBagElement(panel, addButton, 0, 3, 1);
+		addBagElement(panel, addButton, 1, 3, 1);
 		//find
 		findButton = new JButton("Find");
 		findButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//TODO: add disambiguation functionality
-				keyBox.setText(passwordDatabase.get(siteBox.getText().toLowerCase()));
+				if (passwordDatabase.containsKey(siteBox.getText().toLowerCase())) {
+					keyBox.setText(passwordDatabase.get(siteBox.getText().toLowerCase()));
+					inform("Password found.");
+				}
+				else {
+					//TODO: add disambiguation functionality
+					inform("Password not found.");
+				}
 			}
 		});
-		addBagElement(panel, findButton, 1, 3, 1);
+		addBagElement(panel, findButton, 2, 3, 1);
 		//delete
 		deleteButton = new JButton("Delete");
 		deleteButton.addActionListener(new ActionListener() {
@@ -83,7 +90,7 @@ public class GUIFrame extends JFrame {
 				passwordDatabase.remove(siteBox.getText());
 			}
 		});
-		addBagElement(panel, deleteButton, 2, 3, 1);
+		addBagElement(panel, deleteButton, 0, 3, 1);
 		//generate
 		generateButton = new JButton("Generate Random");
 		generateButton.addActionListener(new ActionListener() {
@@ -96,7 +103,7 @@ public class GUIFrame extends JFrame {
 		resetButton = new JButton("Reset Master Key");
 		resetButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				settingMaster = true;
+				me.settingMaster = true;
 				inform("Enter new Master Key (length 16):");
 				swapToAcquire();
 			}
@@ -110,6 +117,8 @@ public class GUIFrame extends JFrame {
 		c.gridx = x;
 		c.gridy = y;
 		c.gridwidth = width;
+		c.anchor = GridBagConstraints.LINE_START;
+		c.weightx = 1;
 		p.add(com, c);
 	}
 	//expects infoDisplay already initialized
@@ -117,7 +126,7 @@ public class GUIFrame extends JFrame {
 		JPanel panel = new JPanel();
 		panel.setLayout(new GridBagLayout());
 		//info
-		addBagElement(panel, infoDisplay, 0, 0, 3);
+		addBagElement(panel, infoDisplay[1], 0, 0, 3);
 		//master
 		masterKeyBox = new JPasswordField(16);
 		masterKeyBox.setToolTipText("Master Key for encrypting or decrypting the underlying file.");
@@ -131,21 +140,26 @@ public class GUIFrame extends JFrame {
 				String attempt = new String(masterKeyBox.getPassword());
 				if (attempt.length() < 16) inform("Key length is too short. Please try again.");
 				else if (attempt.length() > 16) inform("Key length is too long. Please try again.");
-				else if (settingMaster) {
-					masterKey = attempt;
+				else if (me.settingMaster) {
+					me.masterKey = attempt;
 					addHook();
 					inform("Master Key set successfully.");
 					swapToMain();
 				}
 				else if (Main.match(attempt)) {
-					masterKey = attempt;
+					me.masterKey = attempt;
+					addHook();
 					inform("Master Key accepted.");
+					//decrypts password file using master key and deletes files so there isn't issues with overwriting later
+                    Main.readDecrypt(passwordDatabase, attempt);
+                    Main.deleteFile("ENCRYPTEDpasswords.txt");
+                    Main.deleteFile("keyfile.txt");
 					swapToMain();
 				}
 				else {
-					triesRemaining--;
-					inform("Incorrect key. " + triesRemaining + " attempts left.");
-					if (triesRemaining < 1) {
+					me.triesRemaining--;
+					inform("Incorrect key. " + me.triesRemaining + " attempts left.");
+					if (me.triesRemaining < 1) {
 						//terminate in half a second without blocking the event handler
 						new Thread() {
 							public void run() {
@@ -167,10 +181,11 @@ public class GUIFrame extends JFrame {
 		cancelButton = new JButton("Cancel");
 		cancelButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (masterKey == null) {
+				if (me.masterKey == null) {
 					System.exit(0);
 				}
 				else {
+					inform("Master Key Unchanged.");
 					swapToMain();
 				}
 			}
@@ -180,7 +195,10 @@ public class GUIFrame extends JFrame {
 	}
 	private void inform(String message) {
 		if (message != null) {
-			infoDisplay.setText("INFO:" + message);
+			infoDisplay[0].setText(message);
+			infoDisplay[1].setText(message);
+			infoDisplay[2].setText(message);
+			infoDisplay[3].setText(message);
 			pack();
 		}
 	}
@@ -196,8 +214,8 @@ public class GUIFrame extends JFrame {
             try {
                 //Stores passwords in 'ENCRYPTEDpasswords.txt'
                 Main.createFile("ENCRYPTEDpasswords.txt");
-                for (Map.Entry<String, String> entry : passwordDatabase.entrySet()) {        //gathers all hashmap values into a set
-                    Main.usingBufferedWriter(entry.getKey(), entry.getValue(), "ENCRYPTEDpasswords.txt");
+                for (Map.Entry<String, String> entry : me.passwordDatabase.entrySet()) {        //gathers all hashmap values into a set
+                    Main.usingBufferedWriter(entry.getKey(), entry.getValue(), "ENCRYPTEDpasswords.txt", me.masterKey);
                 }
 
                 //Stores key in 'KEYFILE.txt'
@@ -206,22 +224,25 @@ public class GUIFrame extends JFrame {
                         new FileWriter("keyfile.txt", true)
                 );
                 writer.newLine();
-                writer.write(SHA.get_SHA_512_SecurePassword(masterKey)); //uses SHA-512 hash function to securely encrypt MasterKey
+                writer.write(SHA.get_SHA_512_SecurePassword(me.masterKey)); //uses SHA-512 hash function to securely encrypt MasterKey
                 writer.close();
             } catch (Exception e) {
             }
         };
 
         Runtime.getRuntime().addShutdownHook(new Thread(doShutDown, "ShutdownHook"));
-        hookAdded = true;
+        me.hookAdded = true;
 	}
 	public GUIFrame() throws HeadlessException {
 		super("Password Manager");
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 		
-		infoDisplay = new JLabel();
-		mainPanel = getMain();
+		infoDisplay[0] = new JLabel();
+		infoDisplay[1] = new JLabel();
+		infoDisplay[2] = new JLabel();
+		infoDisplay[3] = new JLabel();
 		acquirePanel = getAcquire();
+		mainPanel = getMain();
 		
 		boolean fileExists = Files.isReadable(Paths.get("keyfile.txt")) && Files.isWritable(Paths.get("keyfile.txt"));
 		if (fileExists) {
