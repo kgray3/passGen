@@ -21,7 +21,7 @@ public class Main {
             boolean needKey = true;
 
             while(needKey) {  //ensures that some key gets entered that is length 16
-               if (MasterKey.length() > 16) {
+                if (MasterKey.length() > 16) {
                     System.out.println("Key length is too long. Please try again: ");
                     MasterKey = kmart.nextLine();
                 }
@@ -30,10 +30,10 @@ public class Main {
                     MasterKey = kmart.nextLine();
                 }
                 else { //correct key size --> let user know key so they can memorize it
-                   System.out.println("[KEY ACCEPTED] Your master key is " + MasterKey +" -Don't lose it.");
-                   correctKey = true;
-                   needKey = false;
-               }
+                    System.out.println("[KEY ACCEPTED] Your master key is " + MasterKey +" -Don't lose it.");
+                    correctKey = true;
+                    needKey = false;
+                }
             }
         }
 
@@ -137,6 +137,10 @@ public class Main {
                         System.out.println("\n[Error] Sorry, commas and colons are not allowed. Please try again: ");
                         app = kmart.next();
                     }
+                    else if(app.indexOf("*") == 0) {
+                        System.out.println("\n[Error] Sorry, * is not allowed at the beginning. Please try again: ");
+                        app = kmart.next();
+                    }
                     else {
                         correctApp = true;
                         System.out.println("\n[App Name Accepted]");
@@ -170,7 +174,7 @@ public class Main {
                     String app = kmart.next();
 
 
-                    if(app.indexOf('*') == -1) {
+                    if(app.indexOf('*') != 0) {
                         System.out.println("The password for " + app + " is:\n" + passwordDatabase.get(app.toLowerCase()) + "\n");
                         temp = 1;
                     }
@@ -290,7 +294,7 @@ public class Main {
     //FUNCTION TO CHECK MASTERKEY WITH USERINPUT UPON OPENING PROGRAM
     public static boolean match(String userInput) {
         try {
-           BufferedReader x = new BufferedReader(new FileReader("keyfile.txt")); //checks key in 'KEYFILE.txt'
+            BufferedReader x = new BufferedReader(new FileReader("keyfile.txt")); //checks key in 'KEYFILE.txt'
             String line = x.readLine();
             while(line!= null) {
                 //encrypts userInput using SHA-512 to see if it matches the encrypted key stored on file
@@ -301,7 +305,7 @@ public class Main {
                 }
                 line = x.readLine();
             }
-          x.close();
+            x.close();
         } catch (IOException | NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
@@ -316,7 +320,7 @@ public class Main {
                     "ENCRYPTEDpasswords.txt"));
             String line = reader.readLine();
             while (line != null) {
-               // System.out.println(line.length());
+                // System.out.println(line.length());
                 if(line.length() > 0) {
                     line = AES.paddedDecryption(line, MasterKey);
                 }
@@ -339,7 +343,7 @@ public class Main {
                     "ENCRYPTEDpasswords.txt"));
             String line = reader.readLine();
             while (line != null) {
-               // System.out.println(line.length());
+                // System.out.println(line.length());
                 if(line.length() > 0) {
                     line = AES.paddedDecryption(line, key);
                 }
