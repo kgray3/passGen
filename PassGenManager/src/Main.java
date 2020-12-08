@@ -21,7 +21,7 @@ public class Main {
             boolean needKey = true;
 
             while(needKey) {  //ensures that some key gets entered that is length 16
-               if (MasterKey.length() > 16) {
+                if (MasterKey.length() > 16) {
                     System.out.println("Key length is too long. Please try again: ");
                     MasterKey = kmart.nextLine();
                 }
@@ -30,10 +30,10 @@ public class Main {
                     MasterKey = kmart.nextLine();
                 }
                 else { //correct key size --> let user know key so they can memorize it
-                   System.out.println("[KEY ACCEPTED] Your master key is " + MasterKey +" -Don't lose it.");
-                   correctKey = true;
-                   needKey = false;
-               }
+                    System.out.println("[KEY ACCEPTED] Your master key is " + MasterKey +" -Don't lose it.");
+                    correctKey = true;
+                    needKey = false;
+                }
             }
         }
 
@@ -100,12 +100,11 @@ public class Main {
 
                     //Stores key in 'KEYFILE.txt'
                     createFile("keyfile.txt");
-                    SHA enc = new SHA();
                     BufferedWriter writer = new BufferedWriter(
                             new FileWriter("keyfile.txt", true)
                     );
                     writer.newLine();
-                    writer.write(enc.get_SHA_512_SecurePassword(MasterKey)); //uses SHA-512 hash function to securely encrypt MasterKey
+                    writer.write(SHA.get_SHA_512_SecurePassword(MasterKey)); //uses SHA-512 hash function to securely encrypt MasterKey
                     writer.close();
                 } catch (Exception e) {
                 }
@@ -136,6 +135,10 @@ public class Main {
                 while(!correctApp) {
                     if (app.indexOf(",") > -1 || app.indexOf(":") > -1) {
                         System.out.println("\n[Error] Sorry, commas and colons are not allowed. Please try again: ");
+                        app = kmart.next();
+                    }
+                    else if(app.indexOf("*") == 0) {
+                        System.out.println("\n[Error] Sorry, * is not allowed at the beginning. Please try again: ");
                         app = kmart.next();
                     }
                     else {
@@ -171,7 +174,7 @@ public class Main {
                     String app = kmart.next();
 
 
-                    if(app.indexOf('*') == -1) {
+                    if(app.indexOf('*') != 0) {
                         System.out.println("The password for " + app + " is:\n" + passwordDatabase.get(app.toLowerCase()) + "\n");
                         temp = 1;
                     }
@@ -263,39 +266,6 @@ public class Main {
         }
         kmart.close();
     }
-    
-    public static void setMasterKey(String newMaster) {
-    	// guard for nulls and empty strings
-    	if (newMaster == null || newMaster.length() < 1) return;
-    	// duplicate short keys and cut long keys.
-    	// there are likely better ways to handle this.
-    	masterKey = (newMaster.repeat(16)).substring(0, 16);
-    }
-    static void init() throws IOException {
-	    final Path path = Files.createTempFile("ENCRYPTEDpasswords", ".txt");
-	
-	    if(Files.exists(path))
-	    {
-	        readDecrypt(passwordDatabase);
-	    }
-	    else{
-	        read(passwordDatabase);
-	    }
-	
-	    deleteFile();
-	
-	
-	    Runnable doShutDown = () -> {       //in case of crash creates file of passwords still
-	        try {
-	            createFile();
-	            for (Map.Entry<String, String> entry : passwordDatabase.entrySet()) {        //gathers all hashmap values into a set
-	                usingBufferedWriter(entry.getKey(), entry.getValue());
-	            }
-	        } catch (Exception e){}
-	    };
-	
-	    Runtime.getRuntime().addShutdownHook(new Thread(doShutDown, "ShutdownHook"));
-	}
 
     //ADDS PASSWORD TO HASHMAP
     public static void add(String app, String password, HashMap<String, String> passwordDatabase) {
@@ -304,31 +274,38 @@ public class Main {
 
     //ENCRYPTS PASSWORDS USING MASTERKEY AND WRITES THEM TO 'ENCRYPTEDpasswords.txt' FILE UPON EXIT
     public static void usingBufferedWriter(String app, String password, String fileName) throws IOException {
-        AES encryptor = new AES();
         BufferedWriter writer = new BufferedWriter(
                 new FileWriter(fileName, true)
         );
         writer.newLine();
-        writer.write(encryptor.paddedEncryption(app + ", " + password,MasterKey)); //AES encryption of each password
+        writer.write(AES.paddedEncryption(app + ", " + password,MasterKey)); //AES encryption of each password
+        writer.close();
+    }
+    //ENCRYPTS PASSWORDS USING MASTERKEY AND WRITES THEM TO 'ENCRYPTEDpasswords.txt' FILE UPON EXIT
+    public static void usingBufferedWriter(String app, String password, String fileName, String key) throws IOException {
+        BufferedWriter writer = new BufferedWriter(
+                new FileWriter(fileName, true)
+        );
+        writer.newLine();
+        writer.write(AES.paddedEncryption(app + ", " + password, key)); //AES encryption of each password
         writer.close();
     }
 
     //FUNCTION TO CHECK MASTERKEY WITH USERINPUT UPON OPENING PROGRAM
     public static boolean match(String userInput) {
         try {
-            SHA encrypt = new SHA();
-           BufferedReader x = new BufferedReader(new FileReader("keyfile.txt")); //checks key in 'KEYFILE.txt'
+            BufferedReader x = new BufferedReader(new FileReader("keyfile.txt")); //checks key in 'KEYFILE.txt'
             String line = x.readLine();
             while(line!= null) {
                 //encrypts userInput using SHA-512 to see if it matches the encrypted key stored on file
-                if(line.equalsIgnoreCase(encrypt.get_SHA_512_SecurePassword(userInput)))
+                if(line.equalsIgnoreCase(SHA.get_SHA_512_SecurePassword(userInput)))
                 {
                     x.close();
                     return true;
                 }
                 line = x.readLine();
             }
-          x.close();
+            x.close();
         } catch (IOException | NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
@@ -337,16 +314,38 @@ public class Main {
 
     //reads text file and copies it into local memory
     public static void readDecrypt(HashMap<String, String> x) {
-        AES decryptor = new AES();
         BufferedReader reader;
         try {
             reader = new BufferedReader(new FileReader(
                     "ENCRYPTEDpasswords.txt"));
             String line = reader.readLine();
             while (line != null) {
-               // System.out.println(line.length());
+                // System.out.println(line.length());
                 if(line.length() > 0) {
-                    line = decryptor.paddedDecryption(line, MasterKey);
+                    line = AES.paddedDecryption(line, MasterKey);
+                }
+                int commaPlace = line.indexOf(',');
+                if (commaPlace != -1) {
+                    x.put(line.substring(0, commaPlace), line.substring(commaPlace + 2));
+                }
+                line = reader.readLine();   // read next line
+            }
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    //reads text file and copies it into local memory
+    public static void readDecrypt(HashMap<String, String> x, String key) {
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader(
+                    "ENCRYPTEDpasswords.txt"));
+            String line = reader.readLine();
+            while (line != null) {
+                // System.out.println(line.length());
+                if(line.length() > 0) {
+                    line = AES.paddedDecryption(line, key);
                 }
                 int commaPlace = line.indexOf(',');
                 if (commaPlace != -1) {
