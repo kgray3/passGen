@@ -39,7 +39,6 @@ public class GUIFrame extends JFrame {
 	private JPanel mainPanel;
 	private JPanel acquirePanel;
 	private JPanel generatePanel;
-	private JPanel findPanel;
 	
 	//expects infoDisplay initialized
 	private JPanel getMain() {
@@ -63,8 +62,24 @@ public class GUIFrame extends JFrame {
 		addButton = new JButton("Add");
 		addButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				passwordDatabase.put(siteBox.getText().toLowerCase(), keyBox.getText());
-				inform("Password added.");
+				String site = siteBox.getText().toLowerCase();
+				String password = keyBox.getText();
+				if (site.contains(",")) {
+					inform("Sorry, commas are not allowed in sites.");
+				}
+				else if (site.contains(":")) {
+					inform("Sorry, colons are not allowed in sites.");
+				}
+				else if (site.startsWith("*")) {
+					inform("Sorry, sites must not start with asterisks.");
+				}
+				else if (password.contains(":")) {
+					inform("Sorry, colons are not allowed in passwords.");
+				}
+				else {
+					passwordDatabase.put(site, password);
+					inform("Password added.");
+				}
 			}
 		});
 		addBagElement(panel, addButton, 1, 3, 1);
@@ -99,7 +114,9 @@ public class GUIFrame extends JFrame {
 		deleteButton = new JButton("Delete");
 		deleteButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				passwordDatabase.remove(siteBox.getText());
+				if (null==passwordDatabase.remove(siteBox.getText()))
+					inform("No such site to delete.");
+				else inform("Site and password deleted.");
 			}
 		});
 		addBagElement(panel, deleteButton, 0, 3, 1);
@@ -107,7 +124,8 @@ public class GUIFrame extends JFrame {
 		generateButton = new JButton("Generate Random");
 		generateButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//TODO: swap panels - generate
+				inform("Select generation parameters:");
+				swapToGenerate();
 			}
 		});
 		addBagElement(panel, generateButton, 0, 4, 3);
@@ -205,6 +223,59 @@ public class GUIFrame extends JFrame {
 		addBagElement(panel, cancelButton, 2, 2, 1);
 		return panel;
 	}
+	private JPanel getGenerate() {
+		JPanel panel = new JPanel();
+		panel.setLayout(new GridBagLayout());
+		//info
+		addBagElement(panel, infoDisplay[2], 0, 0, 2);
+		//length
+		JLabel lengthLabel = new JLabel("Length:");
+		addBagElement(panel, lengthLabel, 0, 1, 1);
+		SpinnerNumberModel lengthModel = new SpinnerNumberModel(16, 1, 100, 1);
+		JSpinner lengthSpinner = new JSpinner(lengthModel);
+		addBagElement(panel, lengthSpinner, 1, 1, 1);
+		//digits
+		JLabel digitLabel = new JLabel("Max digits:");
+		addBagElement(panel, digitLabel, 0, 2, 1);
+		SpinnerNumberModel digitModel = new SpinnerNumberModel(0, 0, 100, 1);
+		JSpinner digitSpinner = new JSpinner(digitModel);
+		addBagElement(panel, digitSpinner, 1, 2, 1);
+		//symbol
+		JLabel symbolLabel = new JLabel("Max symbols:");
+		addBagElement(panel, symbolLabel, 0, 3, 1);
+		SpinnerNumberModel symbolModel = new SpinnerNumberModel(0, 0, 100, 1);
+		JSpinner symbolSpinner = new JSpinner(symbolModel);
+		addBagElement(panel, symbolSpinner, 1, 3, 1);
+		//generate
+		JButton genButton = new JButton("Generate");
+		genButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int length = lengthModel.getNumber().intValue();
+				int digits = digitModel.getNumber().intValue();
+				int symbols = symbolModel.getNumber().intValue();
+				if (digits + symbols > length) {
+					inform("Length must be greater than the maximums combined.");
+				}
+				else {
+					Password password1 = new Password(length, digits, symbols);
+                    me.keyBox.setText(password1.createPassword());
+					inform("Password generated.");
+					swapToMain();
+				}
+			}
+		});
+		addBagElement(panel, genButton, 0, 4, 1);
+		//cancel
+		JButton canButton = new JButton("Cancel");
+		canButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				inform("Generation canceled.");
+				swapToMain();
+			}
+		});
+		addBagElement(panel, canButton, 1, 4, 1);
+		return panel;
+	}
 	private void inform(String message) {
 		if (message != null) {
 			infoDisplay[0].setText(message);
@@ -255,6 +326,7 @@ public class GUIFrame extends JFrame {
 		infoDisplay[3] = new JLabel();
 		acquirePanel = getAcquire();
 		mainPanel = getMain();
+		generatePanel = getGenerate();
 		
 		boolean fileExists = Files.isReadable(Paths.get("keyfile.txt")) && Files.isWritable(Paths.get("keyfile.txt"));
 		if (fileExists) {
@@ -280,10 +352,6 @@ public class GUIFrame extends JFrame {
 	}
 	private void swapToGenerate() {
 		this.setContentPane(generatePanel);
-		this.pack();
-	}
-	private void swapToFind() {
-		this.setContentPane(findPanel);
 		this.pack();
 	}
 }
