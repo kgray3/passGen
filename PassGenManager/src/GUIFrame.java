@@ -1,8 +1,13 @@
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.*;
 
@@ -11,10 +16,13 @@ public class GUIFrame extends JFrame {
 		new GUIFrame();
 	}
 	//copied from Main.java
-	private String MasterKey; //stores user-inputted master key
-    private boolean correctKey = false; //used to decide if files should be overwritten upon shutdown
+	private String masterKey; //stores user-inputted master key
     private HashMap<String, String> passwordDatabase = new HashMap<>();  //hashmap for local memory storage of passwords for encryption
 
+    private boolean settingMaster;
+    private int triesRemaining = 3;
+    private boolean hookAdded = false;
+    
 	private static final long serialVersionUID = 1L;
 	
 	private JLabel infoDisplay;
@@ -28,7 +36,10 @@ public class GUIFrame extends JFrame {
 	private JButton deleteButton;
 	private JButton generateButton;
 	private JButton resetButton;
-	private JPanel fullPanel;
+	private JPanel mainPanel;
+	private JPanel acquirePanel;
+	private JPanel generatePanel;
+	private JPanel findPanel;
 	
 	//expects infoDisplay initialized
 	private JPanel getMain() {
@@ -85,7 +96,9 @@ public class GUIFrame extends JFrame {
 		resetButton = new JButton("Reset Master Key");
 		resetButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//TODO: swap panels - acquire
+				settingMaster = true;
+				inform("Enter new Master Key (length 16):");
+				swapToAcquire();
 			}
 		});
 		addBagElement(panel, resetButton, 0, 5, 3);
@@ -115,7 +128,38 @@ public class GUIFrame extends JFrame {
 		setButton = new JButton("Confirm");
 		setButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//TODO: lots of checks here
+				String attempt = new String(masterKeyBox.getPassword());
+				if (attempt.length() < 16) inform("Key length is too short. Please try again.");
+				else if (attempt.length() > 16) inform("Key length is too long. Please try again.");
+				else if (settingMaster) {
+					masterKey = attempt;
+					addHook();
+					inform("Master Key set successfully.");
+					swapToMain();
+				}
+				else if (Main.match(attempt)) {
+					masterKey = attempt;
+					inform("Master Key accepted.");
+					swapToMain();
+				}
+				else {
+					triesRemaining--;
+					inform("Incorrect key. " + triesRemaining + " attempts left.");
+					if (triesRemaining < 1) {
+						//terminate in half a second without blocking the event handler
+						new Thread() {
+							public void run() {
+								try {
+									Thread.sleep(500);
+									System.exit(0);
+								}
+								catch (InterruptedException e) {
+									System.exit(1);
+								}
+							}
+						}.run();
+					}
+				}
 			}
 		});
 		addBagElement(panel, setButton, 1, 2, 1);
@@ -123,56 +167,90 @@ public class GUIFrame extends JFrame {
 		cancelButton = new JButton("Cancel");
 		cancelButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//TODO: swap panels - main, or exit
+				if (masterKey == null) {
+					System.exit(0);
+				}
+				else {
+					swapToMain();
+				}
 			}
 		});
 		addBagElement(panel, cancelButton, 2, 2, 1);
 		return panel;
 	}
-	
+	private void inform(String message) {
+		if (message != null) {
+			infoDisplay.setText("INFO:" + message);
+			pack();
+		}
+	}
+	private void addHook() {
+		//don't add more than one hook
+		if (hookAdded) return;
+        /* SHUTDOWN HOOK
+        - in case of crash creates file of passwords only if user has entered correct key,
+        - which is determined by only calling this function after that point
+        - an incorrect key means no decryption can take place -->
+                then passwords can't be stored locally and returned to the new file properly*/
+        Runnable doShutDown = () -> {
+            try {
+                //Stores passwords in 'ENCRYPTEDpasswords.txt'
+                Main.createFile("ENCRYPTEDpasswords.txt");
+                for (Map.Entry<String, String> entry : passwordDatabase.entrySet()) {        //gathers all hashmap values into a set
+                    Main.usingBufferedWriter(entry.getKey(), entry.getValue(), "ENCRYPTEDpasswords.txt");
+                }
+
+                //Stores key in 'KEYFILE.txt'
+                Main.createFile("keyfile.txt");
+                BufferedWriter writer = new BufferedWriter(
+                        new FileWriter("keyfile.txt", true)
+                );
+                writer.newLine();
+                writer.write(SHA.get_SHA_512_SecurePassword(masterKey)); //uses SHA-512 hash function to securely encrypt MasterKey
+                writer.close();
+            } catch (Exception e) {
+            }
+        };
+
+        Runtime.getRuntime().addShutdownHook(new Thread(doShutDown, "ShutdownHook"));
+        hookAdded = true;
+	}
 	public GUIFrame() throws HeadlessException {
 		super("Password Manager");
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
-		//TODO: init infoDisplay
 		
-		fullPanel = getMain();
+		infoDisplay = new JLabel();
+		mainPanel = getMain();
+		acquirePanel = getAcquire();
 		
-		//TODO: this should use getAcquire()
-		
-		JPanel quickPanel = new JPanel();
-		JPasswordField firstKeyBox = new JPasswordField(16);
-		firstKeyBox.setToolTipText("Master Password for decrypting the file.");
-		quickPanel.add(firstKeyBox);
-		JButton quickSetButton = new JButton("Set Master Password");
-		GUIFrame me = this;
-		quickSetButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				Main.setMasterKey(new String(firstKeyBox.getPassword()));
-				masterKeyBox.setText(new String(firstKeyBox.getPassword()));
-				try {
-					Main.init();
-				}
-				catch(IOException error) {
-					System.out.println("System Abort: File failure: " + error.getMessage());
-					System.exit(ABORT);
-				}
-				me.full();
-			}
-		});
-		quickPanel.add(quickSetButton);
-		this.setContentPane(quickPanel);
-		
-		this.pack();
-		panel.setPreferredSize(new Dimension(siteBox.getWidth(), siteBox.getHeight()*6));
-		this.pack();
+		boolean fileExists = Files.isReadable(Paths.get("keyfile.txt")) && Files.isWritable(Paths.get("keyfile.txt"));
+		if (fileExists) {
+			settingMaster = false;
+			inform("Welcome back! Please enter your Master Key:");
+		}
+		else {
+			settingMaster = true;
+			inform("Welcome, first-time user. Please enter your master key (length 16):");
+		}
+		swapToAcquire();
 		this.setVisible(true);
 	}
-	public void full() {
-		this.setContentPane(fullPanel);
+	private void swapToMain() {
+		settingMaster = false;
+		this.setContentPane(mainPanel);
 		this.pack();
-		fullPanel.setPreferredSize(new Dimension(siteBox.getWidth(), siteBox.getHeight()*6));
-		this.pack();
-		this.setVisible(true);
+		//mainPanel.setPreferredSize(new Dimension(siteBox.getWidth(), siteBox.getHeight()*6));
 	}
-
+	private void swapToAcquire() {
+		this.setContentPane(acquirePanel);
+		this.pack();
+	}
+	private void swapToGenerate() {
+		this.setContentPane(generatePanel);
+		this.pack();
+	}
+	private void swapToFind() {
+		this.setContentPane(findPanel);
+		this.pack();
+	}
 }

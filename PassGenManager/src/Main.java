@@ -263,39 +263,6 @@ public class Main {
         }
         kmart.close();
     }
-    
-    public static void setMasterKey(String newMaster) {
-    	// guard for nulls and empty strings
-    	if (newMaster == null || newMaster.length() < 1) return;
-    	// duplicate short keys and cut long keys.
-    	// there are likely better ways to handle this.
-    	masterKey = (newMaster.repeat(16)).substring(0, 16);
-    }
-    static void init() throws IOException {
-	    final Path path = Files.createTempFile("ENCRYPTEDpasswords", ".txt");
-	
-	    if(Files.exists(path))
-	    {
-	        readDecrypt(passwordDatabase);
-	    }
-	    else{
-	        read(passwordDatabase);
-	    }
-	
-	    deleteFile();
-	
-	
-	    Runnable doShutDown = () -> {       //in case of crash creates file of passwords still
-	        try {
-	            createFile();
-	            for (Map.Entry<String, String> entry : passwordDatabase.entrySet()) {        //gathers all hashmap values into a set
-	                usingBufferedWriter(entry.getKey(), entry.getValue());
-	            }
-	        } catch (Exception e){}
-	    };
-	
-	    Runtime.getRuntime().addShutdownHook(new Thread(doShutDown, "ShutdownHook"));
-	}
 
     //ADDS PASSWORD TO HASHMAP
     public static void add(String app, String password, HashMap<String, String> passwordDatabase) {
